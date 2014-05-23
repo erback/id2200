@@ -59,7 +59,7 @@ void * endHeap(void)
   if(__endHeap == 0) __endHeap = sbrk(0);
   return __endHeap;
 }
-#endifa
+#endif
 
 
 static Header *morecore(unsigned nu)
