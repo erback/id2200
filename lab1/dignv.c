@@ -9,130 +9,148 @@
 #define WRITE 1
 #define READ 0
 
-#define DEBUG 1
+
+
+
+void errHandler(char*);
+void closePipe(int []);
+pid_t startFork(void);
+void makePipe(int []);
 
 int p1[2], p2[2], p3[2];
 
-void err(char* msg){
-  perror(msg);
-  exit(EXIT_FAILURE);
+
+int main(int argc, char** argv){
+
+  pid_t pid1, pid2 = NULL , pid3, pid4;
+
+  makePipe(p1);
+
+  /**PARENT*******************************************/
+  
+  pid1 = startFork();
+
+  /**FIRST CHILD*************PRINTENV****************/
+  if (pid1 == 0){
+
+    if (dup2(p1[WRITE],STDOUT_FILENO)== -1){
+      errHandler("dup2 p1 miss");
+    }
+
+    closePipe(p1);
+    
+
+    execlp("printenv", "printenv", NULL); 
+    
+    errHandler("Error when executing printenv");
+    
+  }
+
+
+  /**Second child*************GRIP****************/
+
+  /*if (1<argc){ 
+      if (dup2(p1[READ],STDOUT_FILENO)== -1)
+              errHandler("dup2 miss");
+
+      waitpid(pid1, NULL, 0);
+      makePipe(p2);
+
+      pid2 = startFork();
+
+      if(pid2 == 0){
+
+          if (dup2(p2[WRITE],STDOUT_FILENO)== -1)
+              errHandler("dup2 miss");
+
+          closePipe(p1);
+          closePipe(p2);
+          execvp("grep", argv);
+          errHandler("Grep did not work");
+      }
+
+  }*/
+
+
+  /**Third child*************SORT****************/
+
+   makePipe(p2);
+
+  if (dup2(p1[READ],STDOUT_FILENO)== -1)
+              errHandler("dup2 p1 read miss");
+  /*if (NULL != pid2)
+    waitpid(pid2, NULL, 0);*/
+
+          
+  waitpid(pid1, NULL, 0);
+  
+
+
+  pid3 = startFork();
+
+
+  if (pid3 == 0){
+
+      if (dup2(p2[WRITE],STDOUT_FILENO)== -1)
+              errHandler("dup2 p2 write miss");
+
+      closePipe(p1);
+      closePipe(p2);
+
+      execlp("sort", "sort", NULL);
+
+      errHandler("Sort failed");
+
+  }
+
+
+
+/**PARENT*******************************************/
+
+ 
+  if (dup2(p2[READ],STDOUT_FILENO)== -1)
+              errHandler("dup2 p2 read miss");
+
+    waitpid(pid3, NULL, 0);
+
+
+    char *args4exec[] = {"less", NULL};
+
+    execvp(args4exec[0], args4exec);
+      errHandler("Less did not work");
+
+
+
+ closePipe(p2);
+ closePipe(p1);
+  
+  return 0;
+}
+
+
+void makePipe(int thePipe[]){
+  if (pipe(thePipe) == -1)
+    errHandler("pipe1");
+}
+
+pid_t startFork(){
+
+  pid_t pid = fork();
+  if (pid == -1)
+    errHandler("Fork error");
+  return pid;
 }
 
 void closePipe(int pipeEnd[2]){
 
   if (close(pipeEnd[READ]) == -1)
-    err("error when closing pipe, read");
+    errHandler("error when closing pipe, read");
 
   if (close(pipeEnd[WRITE]) == -1)
-    err("error when closing pipe, write");
+    errHandler("error when closing pipe, write");
 }
 
-int main(int argc, char** argv){
-
-  int pid1, pid2, pid3;
-
-
-  printf("%s\n", argv[3]);
-
-  if(argv[2]){
-
-    printf("%s\n", argv[3]);
-    exit(0);
-  }
-
-  else{
-    printf("hej\n");
-    exit(0);
-  }
-
-  /*Creating pipes*/
-  if (pipe(p1) == -1){
-    err("pipe1");
-  }
-  if (pipe(p2) == -1){
-    err("pipe2");
-  }
-
-  /*
-  if (pipe(p3) == -1){
-    err("pipe3");
-  }
-  */
-
-  /*First fork*/
-  pid1 = fork();
-  if (pid1 == -1){
-    err("fork1");
-  }
-
-  /**FIRST CHILD*************PRINTENV****************/
-  else if (pid1 == 0){
-
-    if (dup2(p1[WRITE],STDOUT_FILENO)== -1){
-      err("dup2 miss");
-    }
-
-    closePipe(p2);
-    closePipe(p1);
-
-    if (execlp("printenv", "printenv", NULL) == -1){
-      err("execlp printenv does not like you!");
-    }
-  }
-
-  /**PARENT*******************************************/
-  else {
-
-    pid2 = fork();
-    if (pid2 == -1){
-      err("fork2");
-    }
-
-    /**SECOND*CHILD***********SORT*******************/
-    else if (pid2 == 0){
-
-      if (dup2(p1[READ],STDIN_FILENO) == -1){
-    err( "dup2 p1 read" );
-      }
-      if (dup2(p2[WRITE], STDOUT_FILENO) == -1){
-    err("dup2 p2 write");
-      }
-
-      closePipe(p2);
-      closePipe(p1);
-
-      if (execlp("sort", "sort", NULL) == -1){
-    err("execlp sort does not like you!");
-      }
-     }
-
-    /**PARENT*****************************************/
-    else {
-
-      pid3=fork();
-      if (pid3 == -1){
-    err("fork3");
-      }
-      /**THIRD CILD***************LESS****************/
-      else if (pid3 == 0){
-
-    if (dup2(p2[READ], STDIN_FILENO) == -1){
-      err("err dup2 read");
-    }
-
-    closePipe(p2);
-    closePipe(p1);
-
-    char *args4exec[] = {"less", NULL};
-
-    if (execvp(args4exec[0], args4exec) == -1){
-      err("err in exelp pager");
-    }
-      }
-    }
-  }
-  closePipe(p1);
-  closePipe(p2);
-  waitpid(pid3, NULL, 0);
-  return 0;
+void errHandler(char* msg){
+  perror(msg);
+  exit(EXIT_FAILURE);
 }
