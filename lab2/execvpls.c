@@ -14,16 +14,16 @@ int p1[2];
 
 
 void prompt(char* cwd) {
-  
+
   printf("\n %s >> ", cwd);
   fflush(stdout);
 }
-void closePipe(int pipeEnd[2]){ 
+void closePipe(int pipeEnd[2]){
   if (close(pipeEnd[WRITE]) == -1){
       perror("error when closing pipe, read");
   }
   if (close(pipeEnd[READ]) == -1){
-      perror("error when closing pipe, write"); 
+      perror("error when closing pipe, write");
   }
 }
 
@@ -56,7 +56,7 @@ bool changeDir(char * path){
   }
   else
     return false;
-  
+
 }
 
 
@@ -69,11 +69,11 @@ int main(int argc, char **argv){
   char * memory = malloc(size + 1);
   char * args[16];
   char  cwd[1024];
-  bool runBg; 
+  bool runBg;
 
-  
+
   while((strcmp(input, "exit")) != 0){
-    
+
     memset(args, 0, 16);
 
     /*Get the current directory adds it to the cwd*/
@@ -84,18 +84,18 @@ int main(int argc, char **argv){
     /*Printing the command promt*/
     prompt(cwd);
 
-    
+
     /*Read the input from the command line*/
 
     input = (char *) malloc (size + 1);
     getline(&input, &size, stdin);
-    
-    /*Get first command element*/ 
+
+    /*Get first command element*/
     args[0] = strtok(input, " \n\t");
-    
-    
-    
-    
+
+
+
+
     if ( NULL == args[0] ) /* If no value was entered print the commandpromt again*/
       continue;
 
@@ -109,35 +109,32 @@ int main(int argc, char **argv){
 
     /*Then check if the change directory command was entered*/
     else if (0 == strcmp(args[0], "cd")){
-          
+
           /*get the next argument*/
           args[1] = strtok(NULL, " \n\t");
 
           if (NULL == args[1]){
             if (changeDir(getenv("HOME")) == false)
-              errHandler("Could not change directory");  
+              errHandler("Could not change directory");
             }
 
-          else{ 
+          else{
             if (false == changeDir(args[1]))
               errHandler("Could not change directory");
           }
           continue;
         }
-        
-        
+
+
     else{
-          
+        bool and = false;
         /* Parse the rest of the arguments*/
         i = 1;
         for(1; i ++; i<16){
           args[i] = strtok(NULL, " \n\t");
           if (args[i] == NULL){
-            if (args[1] != NULL){
+            if (args[1] != NULL && ){
               bool and = &( args[i-1][strlen(args[i-1])-1] ) ? : true;
-            }
-            else{
-              bool and  = false;
             }
             break;
           }
@@ -146,10 +143,12 @@ int main(int argc, char **argv){
 
 
         /* Determine if it should be run as background or foregorund process, default is runBg = false*/
-       
-        
-        
-        if (0 == strcmp(and, "&"))
+
+
+
+        if (and){
+          printf("%s\n", "hej");
+        }
 
 
         /*Create piṕe to execute command line actions and arguments*/
@@ -169,7 +168,7 @@ int main(int argc, char **argv){
                 }
         char bytut[] = "bytut";
         close(p1[0]);
-        write(p1[1], bytut, strlen(bytut) + 1);  
+        write(p1[1], bytut, strlen(bytut) + 1);
         close(p1[1]);
       }
       else{
@@ -178,9 +177,9 @@ int main(int argc, char **argv){
         read(p1[0], hmm, sizeof(hmm));
         close(p1[0]);
       }
-    
+
     }
-    
+
   }
 }
 
@@ -188,9 +187,9 @@ int main(int argc, char **argv){
 
 
 
-      
-     
-      
 
-      
-    
+
+
+
+
+
