@@ -1,10 +1,13 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 #include <stdbool.h>
+#include <time.h>
 
+#define _GNU_SOURCE
 #define WRITE 1
 #define READ 2
 
@@ -59,6 +62,29 @@ bool changeDir(char * path){
 
 }
 
+pid_t startFork(){
+
+  pid_t pid = fork();
+  if (pid == -1)
+    errHandler("Fork error");
+  return pid;
+}
+
+void closePipe(int pipeEnd[2]){
+
+  if (close(pipeEnd[READ]) == -1)
+    errHandler("error when closing pipe, read");
+
+  if (close(pipeEnd[WRITE]) == -1)
+    errHandler("error when closing pipe, write");
+}
+
+void cleanZoombie(int signal) {
+    wait();
+    printf("Zoombie process %i\n was cleaned up", signal);
+}
+
+
 
 
 int main(int argc, char **argv){
@@ -66,10 +92,12 @@ int main(int argc, char **argv){
   size_t size = 256;
   size_t i;
   char * input = "";
-  char * memory = malloc(size + 1);
   char * args[16];
   char  cwd[1024];
   bool runBg;
+  clock_t start, end;
+  double elapsed;
+  signal(SIGCHLD,cleanZoombie);
 
 
   while((strcmp(input, "exit")) != 0){
@@ -127,55 +155,73 @@ int main(int argc, char **argv){
 
 
     else{
-        bool and = false;
+        runBg = false;
         /* Parse the rest of the arguments*/
         i = 1;
         for(1; i ++; i<16){
           args[i] = strtok(NULL, " \n\t");
           if (args[i] == NULL){
-            if (args[1] != NULL && ){
-              bool and = &( args[i-1][strlen(args[i-1])-1] ) ? : true;
+              char * ampersand = &( args[i-1][strlen(args[i-1])-1] );
+            if (args[1] != NULL && *ampersand =="&"){
+               runBg = true;
+               * ampersand = '\0';
             }
+            else if( NULL =! args[1] &&  "&" == *ampersand && strlen(args[i-1]) <= 1)
+              args[i-1] == NULL;
+
             break;
           }
         }
 
 
 
-        /* Determine if it should be run as background or foregorund process, default is runBg = false*/
+        /* Start a pipe if background processes*/
 
 
-
-        if (and){
-          printf("%s\n", "hej");
+        if (runBg){
+          if(pipe(p1)== -1)
+              perror("Pipe creation error");
         }
 
+        //Starting the timer
+            start = clock();
 
-        /*Create piṕe to execute command line actions and arguments*/
-          if(pipe(p1)== -1){
-              perror("pipe1");
+
+        /*Create pipe to execute command line actions and arguments*/
+          
+
+          pid = startFork();
+          if(!runBg)
+            sighold(SIGCHLD);
+
+
+
+         
+          if(0 == pid){
+            if (runBg){
+                if (dup2(p1[STDIN_FILENO],STDIN_FILENO)== -1)
+                    errHandler("dup2 error");
+                closePipe(p1);
             }
 
-          pid = fork();
-          if (0 > pid){
-            printf("ERROR");
+            if (execvp(args[0], args) < 0)
+                errHandler("That is not a valid command..")
+                
+       
           }
-          else if(0 == pid){
+          
+          if (runBg){
+            closePipe(p1);
+          }
 
-            if (execvp(args[0], args) < 0){
-              printf("That is not a valid command... Try another one such as ls or cd");
-                exit(1);
-                }
-        char bytut[] = "bytut";
-        close(p1[0]);
-        write(p1[1], bytut, strlen(bytut) + 1);
-        close(p1[1]);
-      }
-      else{
-        char hmm[100];
-        close(p1[1]);
-        read(p1[0], hmm, sizeof(hmm));
-        close(p1[0]);
+          else{
+            waitpid(pid, NULL, 0);
+            end = clock();
+            elapsed = ((double) (end-start)) / CLOCKS_PER_SEC;
+            fprintf(stderr, "Time elapsed for process: %i ms\n", elapsed);
+            sigrelse(SIGCHLD);
+
+            
       }
 
     }
