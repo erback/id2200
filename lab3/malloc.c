@@ -3,15 +3,15 @@
 #include <string.h> 
 #include <errno.h> 
 #include <sys/mman.h>
+#include <stdio.h>
 
-#ifndef STRATEGY /* if not defined use system malloc */
-#define STRATEGY 1 /* Use strategy first as default */
-#endif
+#ifndef STRATEGY
+#define STRATEGY 1
+#endif 
 
 #define STRATEGY_FIRST 1
 #define STRATEGY_BEST 2
 
-#if STRATEGY != 0 /* Really neccessarry? */
 
 
 #if STRATEGY < 1 || STRATEGY > 2
@@ -130,10 +130,11 @@ void * malloc(size_t nbytes){
     base.s.size = 0;
   }
 
-
+  
   /*Implements strategy first fit*/
 
   if(STRATEGY == STRATEGY_FIRST){
+    
     for(p= prevp->s.ptr;  ; prevp = p, p = p->s.ptr) {
       if(p->s.size >= nunits) {                           /* big enough */
         if (p->s.size == nunits)                          /* exactly */
@@ -146,9 +147,10 @@ void * malloc(size_t nbytes){
         freep = prevp;
         return (void *)(p+1);                             /*Return the block that fits first*/
       }
-      if(p == freep)                                      /* wrapped around free list */
+      if(p == freep){                                    /* wrapped around free list */
         if((p = morecore(nunits)) == NULL)
-	       return NULL;                                    /* none left *t*/
+	       return NULL;
+         }                                    /* none left *t*/
     }
   }
 
@@ -167,11 +169,11 @@ void * malloc(size_t nbytes){
         else if(p->s.size > nunits){ /* We have a fit but not a perfect fit*/
           if (best == 0){/* No previous best fit*/
               best = p;
-              bestprev = prevp;
+              prevbest = prevp;
           } 
           else if(best->s.size > p->s.size) { /* The size of the new block is a fit but smaller than the current best fit*/
               best = p;
-              bestprev = prevp;
+              prevbest = prevp;
           }
           
         }
@@ -212,8 +214,8 @@ void *realloc(void * ptr, size_t size){
       return NULL;
     }
 
-    newp = ((header *)ptr) - 1; 
-    currSize = (newp->s.size-1) * sizeof(header);
+    newp = ((Header *)ptr) - 1; 
+    currSize = (newp->s.size-1) * sizeof(Header);
 
     if (currSize > size){
       currSize = size;
