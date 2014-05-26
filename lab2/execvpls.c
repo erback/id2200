@@ -6,10 +6,13 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <time.h>
+#include <signal.h>
 
 #define _GNU_SOURCE
 #define WRITE 1
 #define READ 2
+#define BUFFERSIZE 71
+#define ARGVSIZE 6
 
 int p1[2];
 /*bool exitShell;*/
@@ -30,19 +33,7 @@ void closePipe(int pipeEnd[2]){
   }
 }
 
-/*void  tokenizeInput(char *input){
-  i = 0;
-  char * tokenList [5];
-  while(input != NULL) {
-    printf("Testing %s\n", input);
 
-    tokenList[i] = strtok(NULL, " ");
-    i ++;
-  }
-
-  return tokenList;
-
-}*/
 
 void errHandler(char * msg){
   perror(msg);
@@ -70,39 +61,106 @@ pid_t startFork(){
   return pid;
 }
 
-void closePipe(int pipeEnd[2]){
 
-  if (close(pipeEnd[READ]) == -1)
-    errHandler("error when closing pipe, read");
-
-  if (close(pipeEnd[WRITE]) == -1)
-    errHandler("error when closing pipe, write");
-}
 
 void cleanZoombie(int signal) {
-    wait();
-    printf("Zoombie process %i\n was cleaned up", signal);
+    wait(&signal);
+    printf("Zoombie process %i was cleaned up", signal);
 }
 
+bool checkBG(char * args[]){
+
+}
+
+
+
+void run(char ** args){
+
+        bool runBg = false;
+
+        clock_t start, end;
+        pid_t  pid;
+        double elapsed;
+
+
+
+        int i=0;
+
+      while(args[i] != NULL){
+          i++;
+          printf("%i\n", i);
+        }
+
+      if (strcmp(&(args[i-1][strlen(args[i-1])-1]), "&") == 0)
+        runBg = true;
+      else
+        runBg =false;
+
+      if(runBg)
+          printf("%s\n", "bg is runnign");
+
+
+      if (runBg){
+          if(pipe(p1)== -1)
+              perror("Pipe creation error");
+        }
+
+        //Starting the timer
+            start = clock();
+
+            //printf("%s\n", start);
+
+        /*Create pipe to execute command line actions and arguments*/
+
+
+          pid = startFork();
+
+
+          if(0 == pid){
+            if (runBg){
+                if (dup2(p1[STDIN_FILENO],STDIN_FILENO)== -1)
+                    errHandler("dup2 error");
+                  closePipe(p1);
+            }
+
+            if (execvp(args[0], args) < 0)
+                errHandler("That is not a valid command..");
+
+
+          }
+
+          if (runBg){
+
+            closePipe(p1);
+          }
+
+          else{
+
+            waitpid(pid, NULL, 0);
+
+            end = clock();
+            elapsed = ((double) (end-start)) / CLOCKS_PER_SEC;
+            fprintf(stderr, "Time elapsed for process: %f s\n", elapsed);
+            printf("%i\n", pid);
+
+}
+
+}
 
 
 
 int main(int argc, char **argv){
-  pid_t  pid;
-  size_t size = 256;
-  size_t i;
-  char * input = "";
-  char * args[16];
+  bool programStatus = true;
   char  cwd[1024];
-  bool runBg;
-  clock_t start, end;
-  double elapsed;
-  signal(SIGCHLD,cleanZoombie);
+  char input[BUFFERSIZE];
+  char **arguments = (char **) calloc (ARGVSIZE,  BUFFERSIZE);
+  //signal(SIGCHLD,cleanZoombie);
 
 
-  while((strcmp(input, "exit")) != 0){
+  while(programStatus){
 
-    memset(args, 0, 16);
+    //memset(args, 0, 16);
+
 
     /*Get the current directory adds it to the cwd*/
 
@@ -115,39 +173,40 @@ int main(int argc, char **argv){
 
     /*Read the input from the command line*/
 
-    input = (char *) malloc (size + 1);
-    getline(&input, &size, stdin);
 
-    /*Get first command element*/
-    args[0] = strtok(input, " \n\t");
+    fgets(input, BUFFERSIZE, stdin);
+    char *args = strtok(input, " \n");
+    int length = 0;
+    while( args != NULL){ /* Read until NULL */
+      arguments[length] = args; /* Point to the input */
+      args = strtok(NULL, " "); /* Move on */
+      length++;
+    }
 
-
-
-
-    if ( NULL == args[0] ) /* If no value was entered print the commandpromt again*/
+    if ( NULL == arguments[0] ) /* If no value was entered print the commandpromt again*/
       continue;
 
 
     /* Check if user wants to exit the promt*/
-    else if (strcmp(args[0], "exit") == 0){
+    else if (strcmp(arguments[0], "exit") == 0){
       printf("Tack så mycket för denna gång.. Välkommen åter!\n");
-      break;
+      programStatus = false;
     }
 
 
     /*Then check if the change directory command was entered*/
-    else if (0 == strcmp(args[0], "cd")){
+    else if (0 == strcmp(arguments[0], "cd")){
 
           /*get the next argument*/
-          args[1] = strtok(NULL, " \n\t");
+          arguments[1] = strtok(NULL, " \n\t");
 
-          if (NULL == args[1]){
+          if (NULL == arguments[1]){
             if (changeDir(getenv("HOME")) == false)
               errHandler("Could not change directory");
             }
 
           else{
-            if (false == changeDir(args[1]))
+            if (false == changeDir(arguments[1]))
               errHandler("Could not change directory");
           }
           continue;
@@ -155,79 +214,17 @@ int main(int argc, char **argv){
 
 
     else{
-        runBg = false;
-        /* Parse the rest of the arguments*/
-        i = 1;
-        for(1; i ++; i<16){
-          args[i] = strtok(NULL, " \n\t");
-          if (args[i] == NULL){
-              char * ampersand = &( args[i-1][strlen(args[i-1])-1] );
-            if (args[1] != NULL && *ampersand =="&"){
-               runBg = true;
-               * ampersand = '\0';
-            }
-            else if( NULL =! args[1] &&  "&" == *ampersand && strlen(args[i-1]) <= 1)
-              args[i-1] == NULL;
 
-            break;
-          }
-        }
+      printf("%s\n", "hej");
+      run(arguments);
 
 
-
-        /* Start a pipe if background processes*/
-
-
-        if (runBg){
-          if(pipe(p1)== -1)
-              perror("Pipe creation error");
-        }
-
-        //Starting the timer
-            start = clock();
-
-
-        /*Create pipe to execute command line actions and arguments*/
-          
-
-          pid = startFork();
-          if(!runBg)
-            sighold(SIGCHLD);
-
-
-
-         
-          if(0 == pid){
-            if (runBg){
-                if (dup2(p1[STDIN_FILENO],STDIN_FILENO)== -1)
-                    errHandler("dup2 error");
-                closePipe(p1);
-            }
-
-            if (execvp(args[0], args) < 0)
-                errHandler("That is not a valid command..")
-                
-       
-          }
-          
-          if (runBg){
-            closePipe(p1);
-          }
-
-          else{
-            waitpid(pid, NULL, 0);
-            end = clock();
-            elapsed = ((double) (end-start)) / CLOCKS_PER_SEC;
-            fprintf(stderr, "Time elapsed for process: %i ms\n", elapsed);
-            sigrelse(SIGCHLD);
-
-            
       }
 
-    }
-
   }
+
 }
+
 
 
 
