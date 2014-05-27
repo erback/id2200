@@ -112,6 +112,7 @@ void executeCommand(bool bgProcess, char **arguments){
 	start = clock();
 	pid_t childProcess = startFork();
 	if (0 == childProcess){
+		printf("Inne i child");
 		regSigHandler(SIGINT, sigHandler);
 		execvp(arguments[0], arguments);
 		perror("Nu va det något galet med det du skrev in...");
@@ -144,6 +145,8 @@ void regSigHandler(int sigCode, void (*handler)(int sig)){
 	int retValue;
 	struct sigaction sigParams;
 	sigParams.sa_handler = handler;
+	sigemptyset( &sigParams.sa_mask );
+	sigParams.sa_flags = 0;
 	retValue = sigaction(sigCode, &sigParams, (void *) 0);
 
 	if (-1 == retValue){
@@ -156,7 +159,7 @@ void sigHandler(int sigCode){
 	printf("hej");
 
 	if (SIGINT == sigCode){
-		printf(sigCode);
+		printf("%d",sigCode);
 	}
 
 }

@@ -220,13 +220,9 @@ void *realloc(void * ptr, size_t size){
       return NULL;
     }
 
-<<<<<<< HEAD
     newp = ((header *)ptr) - 1;
     currSize = (newp->s.size-1) * sizeof(header);
-=======
-    newp = ((Header *)ptr) - 1;
-    currSize = (newp->s.size-1) * sizeof(Header);
->>>>>>> b40ca208f7972d97e730e40b40711b9174651031
+
 
     if (currSize > size){
       currSize = size;
