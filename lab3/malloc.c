@@ -1,10 +1,10 @@
 #include "brk.h"
 #include <unistd.h>
-#include <string.h> 
-#include <errno.h> 
+#include <string.h>
+#include <errno.h>
 #include <sys/mman.h>
 
-#ifndef STRATEGY /* if not defined use system malloc */
+#ifndef STRATEGY
 #define STRATEGY 1 /* Use strategy first as default */
 #endif
 
@@ -23,7 +23,7 @@
 
 
 #define _GNU_SOURCE
-#define NALLOC 1024    
+#define NALLOC 1024
 
 
 
@@ -35,7 +35,7 @@ typedef long Align;                                     /* for alignment to long
 union header {                                          /* block header */
   struct {
     union header *ptr;                                  /* next block if on free list */
-    unsigned size;                                      /* size of this block  - what unit? */ 
+    unsigned size;                                      /* size of this block  - what unit? */
   } s;
   Align x;                                              /* force alignment of blocks */
 };
@@ -168,12 +168,12 @@ void * malloc(size_t nbytes){
           if (best == 0){/* No previous best fit*/
               best = p;
               bestprev = prevp;
-          } 
+          }
           else if(best->s.size > p->s.size) { /* The size of the new block is a fit but smaller than the current best fit*/
               best = p;
               bestprev = prevp;
           }
-          
+
         }
         if(p == freep) { /* Looped through the free list space */
           if(best == NULL) { /* No best fit*/
@@ -187,7 +187,7 @@ void * malloc(size_t nbytes){
             best->s.size = nunits; /* Set the size of this block to the requested amount*/
             freep = prevp;
             break;
-          } 
+          }
         }
 
      }
@@ -212,17 +212,17 @@ void *realloc(void * ptr, size_t size){
       return NULL;
     }
 
-    newp = ((header *)ptr) - 1; 
+    newp = ((header *)ptr) - 1;
     currSize = (newp->s.size-1) * sizeof(header);
 
     if (currSize > size){
       currSize = size;
     }
-    
+
     newp = malloc(size); /*ALlocate new space*/
     if(newp == NULL)
       return NULL;
-    
+
     memcpy(newp, ptr, currSize); /* Copy the old pointer to new pointer */
     free(ptr); /* Free the old pointer*/
 

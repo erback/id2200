@@ -88,24 +88,24 @@ int main(int argc, char *argv[])
       else if( memPosts[i].ptr != NULL )
 	memPosts[i].ptr[0]  = (double)3.14;
   }
-  
+
   calcMemUsage(&maxMem);
-  
+
   for(i=0;i<MAXITERS;i++)
     {
       int index;
       index = rand()%MAXPOSTS;
- 
+
       if(ALLOCATED(index))
-	{ 
+	{
 	if(rand()%5 < 3)
 	  {
 	    if(memPosts[index].ptr[0] != (double)3.14)
 	      MESSAGE("* ERROR: Corrupt memory handling\n");
 	    memPosts[index].size = rand()%MAXSIZE;
-	    memPosts[index].ptr = 
+	    memPosts[index].ptr =
 	      (double*) realloc(memPosts[index].ptr,
-				memPosts[index].size*sizeof(double)); 
+				memPosts[index].size*sizeof(double));
 	    if(memPosts[index].size && memPosts[index].ptr[0] != (double)3.14)
 	      MESSAGE("* ERROR: Corrupt memory handling\n");
 	    if(memPosts[index].size) memPosts[index].ptr[0] = (double)3.14;
@@ -118,10 +118,10 @@ int main(int argc, char *argv[])
             memPosts[index].size = 0;
 	  }
 	}
-      else 
+      else
 	{
 	  memPosts[index].size = rand()%MAXSIZE;
-	  memPosts[index].ptr = (double*) malloc(memPosts[index].size*sizeof(double)); 
+	  memPosts[index].ptr = (double*) malloc(memPosts[index].size*sizeof(double));
 	  if(memPosts[index].size) memPosts[index].ptr[0] = (double)3.14;
 	}
       calcMemUsage(&maxMem);
