@@ -5,15 +5,13 @@
 #include <sys/mman.h>
 #include <stdio.h>
 
-#ifndef STRATEGY
-#define STRATEGY 1 /* Use strategy first as default */
-#endif
+
+#define STRATEGY 2 /* Use strategy first as default */
+
 
 
 #define STRATEGY_FIRST 1
 #define STRATEGY_BEST 2
-
-
 
 #if STRATEGY < 1 || STRATEGY > 2
 #error STRATEGY must contain a value over 1 and below 2
@@ -135,6 +133,7 @@ void * malloc(size_t nbytes){
   /*Implements strategy first fit*/
 
   if(STRATEGY == STRATEGY_FIRST){
+    printf("%s\n", "Strateg first is used");
 
     for(p= prevp->s.ptr;  ; prevp = p, p = p->s.ptr) {
       if(p->s.size >= nunits) {                           /* big enough */
@@ -157,7 +156,9 @@ void * malloc(size_t nbytes){
 
   /*Implements strategy best fit*/
   else if (STRATEGY == STRATEGY_BEST){
-    Header * best, * prevbest;
+
+    printf("%s\n","strategy best is used" );
+    Header * best = NULL, * prevbest = NULL;
 
      for(p= prevp->s.ptr;  ; prevp = p, p = p->s.ptr) {
 
@@ -170,13 +171,9 @@ void * malloc(size_t nbytes){
         else if(p->s.size > nunits){ /* We have a fit but not a perfect fit*/
           if (best == 0){/* No previous best fit*/
               best = p;
-<<<<<<< HEAD
-              bestprev = prevp;
-          }
-=======
               prevbest = prevp;
           }
->>>>>>> b40ca208f7972d97e730e40b40711b9174651031
+
           else if(best->s.size > p->s.size) { /* The size of the new block is a fit but smaller than the current best fit*/
               best = p;
               prevbest = prevp;
@@ -220,8 +217,8 @@ void *realloc(void * ptr, size_t size){
       return NULL;
     }
 
-    newp = ((header *)ptr) - 1;
-    currSize = (newp->s.size-1) * sizeof(header);
+    newp = ((Header *)ptr) - 1;
+    currSize = (newp->s.size-1) * sizeof(Header);
 
 
     if (currSize > size){
