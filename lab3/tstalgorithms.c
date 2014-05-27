@@ -91,6 +91,7 @@ int main(int argc, char *argv[])
 
   calcMemUsage(&maxMem);
 
+
   for(i=0;i<MAXITERS;i++)
     {
       int index;
@@ -119,12 +120,17 @@ int main(int argc, char *argv[])
 	  }
 	}
       else
-	{
+	{  
+    printf("%s\n", "hej");
 	  memPosts[index].size = rand()%MAXSIZE;
+
 	  memPosts[index].ptr = (double*) malloc(memPosts[index].size*sizeof(double));
+
 	  if(memPosts[index].size) memPosts[index].ptr[0] = (double)3.14;
 	}
       calcMemUsage(&maxMem);
+
+
     }
 #ifdef MMAP
   end = endHeap();
