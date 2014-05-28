@@ -133,8 +133,6 @@ void * malloc(size_t nbytes){
   /*Implements strategy first fit*/
 
   if(STRATEGY == STRATEGY_FIRST){
-    printf("%s\n", "Strateg first is used");
-
     for(p= prevp->s.ptr;  ; prevp = p, p = p->s.ptr) {
       if(p->s.size >= nunits) {                           /* big enough */
         if (p->s.size == nunits)                          /* exactly */
@@ -156,20 +154,16 @@ void * malloc(size_t nbytes){
 
   /*Implements strategy best fit*/
   else if (STRATEGY == STRATEGY_BEST){
-
-    printf("%s\n","strategy best is used" );
-    Header * best = NULL, * prevbest = NULL;
-
+    Header *best = NULL, *prevbest;
      for(p= prevp->s.ptr;  ; prevp = p, p = p->s.ptr) {
-
-        if (p->s.size == nunits)  { /* We have a perfect fit*/
-          best = p;
+        if (p->s.size == nunits) { /* We have a perfect fit*/
+          prevp-> s.ptr = p->s.ptr;
           freep = prevp;
-          break; /* Break the loop becaúse a best fit has been found*/
+          return (void *) (p +1);
         }
 
         else if(p->s.size > nunits){ /* We have a fit but not a perfect fit*/
-          if (best == 0){/* No previous best fit*/
+          if (best == NULL){/* No previous best fit*/
               best = p;
               prevbest = prevp;
           }
@@ -180,22 +174,27 @@ void * malloc(size_t nbytes){
           }
 
         }
+
         if(p == freep) { /* Looped through the free list space */
-          if(best == NULL) { /* No best fit*/
-            if((p = morecore(nunits)) == NULL) /* Call morecore to try allocate more memory */
+          if(NULL == best) { /* No best fit*/
+            if((NULL  == morecore(nunits))){ /* Call morecore to try allocate more memory */
                 return NULL;
+              }
           }
 
           else {/*We had best match!!!*/
             best->s.size -= nunits;/*Remove space from block*/
             best += best->s.size;/*Make the best fit a header */
             best->s.size = nunits; /* Set the size of this block to the requested amount*/
-            freep = prevp;
             break;
           }
+        
         }
 
      }
+
+      if (best == freep)
+            freep = prevp;
 
      return (void *)(best+1);
 

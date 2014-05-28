@@ -80,17 +80,17 @@ int main(int argc, char *argv[])
       memPosts[i].size = rand()%(MAXSIZE/2);
       memPosts[i].ptr = (double*) malloc(memPosts[i].size*sizeof(double));
       if ( memPosts[i].size == 0 &&  memPosts[i].ptr!= NULL )
-/*	MESSAGE("* ERROR: malloc doesn't return NULL pointer on zero size\n");*/
-		  ;
-      else if( memPosts[i].size && memPosts[i].ptr == NULL ) {
+	MESSAGE("* ERROR: malloc doesn't return NULL pointer on zero size\n");
+		  
+      else if( memPosts[i].size && memPosts[i].ptr == NULL ) 
 	MESSAGE("* ERROR: malloc returned NULL on non-zero size request\n");
-	  }
+	  
       else if( memPosts[i].ptr != NULL )
-	memPosts[i].ptr[0]  = (double)3.14;
-  }
+	     memPosts[i].ptr[0]  = (double)3.14;
+   }
 
   calcMemUsage(&maxMem);
-
+  
 
   for(i=0;i<MAXITERS;i++)
     {
@@ -121,7 +121,6 @@ int main(int argc, char *argv[])
 	}
       else
 	{  
-    printf("%s\n", "hej");
 	  memPosts[index].size = rand()%MAXSIZE;
 
 	  memPosts[index].ptr = (double*) malloc(memPosts[index].size*sizeof(double));
