@@ -30,7 +30,7 @@
  *
  */
 #include <stdlib.h>
-#include <stdio.h>
+#include <stdio.h>a
 #include <time.h>
 #include "malloc.h"
 #include "tst.h"
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
    }
 
   calcMemUsage(&maxMem);
-  
+
 
   for(i=0;i<MAXITERS;i++)
     {
