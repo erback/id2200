@@ -110,7 +110,7 @@ static Header *morecore(unsigned nu)
   up = (Header *) cp;
   up->s.size = nu;
   free((void *)(up+1));
-  return freep;
+  return freep; 
 }
 
 void * malloc(size_t nbytes){
@@ -147,9 +147,9 @@ void * malloc(size_t nbytes){
         if((p = morecore(nunits)) == NULL)
 	       return NULL;
          }                                    /* none left *t*/
-    }
-  }
-
+    } 
+  } 
+ 
   /*Implements strategy best fit*/
   else if (STRATEGY == STRATEGY_BEST){
     Header *best = NULL, *prevbest;
