@@ -17,7 +17,6 @@ int main(int argc, char *argv[]) {
 
     /* Measure allocation time */
     for (i = 0; i < NUM_BLOCKS; ++i) {
-        printf("op_nr,time\n");
         usleep(rand() % 1000);
         TIMER_START();
         blocks[i] = malloc(8177);

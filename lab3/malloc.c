@@ -9,17 +9,15 @@ Det här biblitoket skapar de inbygga biblioteksfunktionerna malloc, free och re
 
 */
 
-/*
-Malloc 
 
-*/
 
 
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/mman.h>
-#include <stdio.h> 
+#include <stdio.h>
+#include "brk.h" 
   
 #ifndef STRATEGY
 #define STRATEGY 1 /* Use strategy first as default */
@@ -41,8 +39,6 @@ Malloc
 
 
 
-
-                                /* minimum #units to request */
 
 typedef long Align;                                     /* Alignar block */
 
@@ -153,10 +149,12 @@ motsvarar storleken hos nbytes.
 Best Fit: Innebär vanligtvis en mer effektiv metod för utnyttjande av den fria minnet i listan freep eftersom alogritmen
 jämför olika minnesblock till den bästa "fitten" för den efterfrågade minnesallokeringen "nbytes" har hittats och returneras därför-
 Dessvärre betyder denna mer effektiva alogoritm ur ett resursutnytjingsperspektiv att allokeringsprocessen tar längre tid då
-den alltså inte väljer första bästa plats.
+den alltså inte väljer första bästa plats som First Fit gör.
 
- 
 
+Skalet till malloc har hämtats från:
+
+http://www.ict.kth.se/courses/ID2206/COURSELIB/malloc/malloc.c
 */
 void * malloc(size_t nbytes){
 
@@ -173,62 +171,62 @@ void * malloc(size_t nbytes){
   }
 
 
-  /*Implements strategy first fit*/
+  /*Implementerar strategin First Fit*/
 
   if(STRATEGY == STRATEGY_FIRST){
     for(p= prevp->s.ptr;  ; prevp = p, p = p->s.ptr) {
-      if(p->s.size >= nunits) {                           /* big enough */
-        if (p->s.size == nunits)                          /* exactly */
+      if(p->s.size >= nunits) {                           /* En stornog minnesplats har hittats */
+        if (p->s.size == nunits)                          /* En perfekt matchning*/
 	        prevp->s.ptr = p->s.ptr;
-        else {                                            /* allocate tail end */
+        else {                                            /* Anpassa blocket till nbytes (nunits)*/
 	        p->s.size -= nunits;
 	        p += p->s.size;
 	        p->s.size = nunits;
         }
         freep = prevp;
-        return (void *)(p+1);                             /*Return the block that fits first*/
+        return (void *)(p+1);                             /*Retunera blocket som har allokerats*/
       }
-      if(p == freep){                                    /* wrapped around free list */
+      if(p == freep){                                    /* Inget block som är stort nog har hittats därför anropas morecore för att fixa mer minne*/
         if((p = morecore(nunits)) == NULL)
-	       return NULL;
-         }                                    /* none left *t*/
+	       return NULL;                                    //Slut på minne
+         }                                    
     } 
   } 
  
-  /*Implements strategy best fit*/
+  /*Implementerar startegin Best Fit*/
   else if (STRATEGY == STRATEGY_BEST){
     Header *best = NULL, *prevbest;
      for(p= prevp->s.ptr;  ; prevp = p, p = p->s.ptr) {
-        if (p->s.size == nunits) { /* We have a perfect fit*/
+        if (p->s.size == nunits) { /* En perfekt matchning*/
           prevp-> s.ptr = p->s.ptr;
           freep = prevp;
           return (void *) (p +1);
         }
 
-        else if(p->s.size > nunits){ /* We have a fit but not a perfect fit*/
-          if (best == NULL){/* No previous best fit*/
+        else if(p->s.size > nunits){ /* Ett block in den fria listan passar men är inte perfekt*/
+          if (best == NULL){/* Ingen tidigare best fit */
               best = p;
               prevbest = prevp;
           }
 
-          else if(best->s.size > p->s.size) { /* The size of the new block is a fit but smaller than the current best fit*/
+          else if(best->s.size > p->s.size) { /* En bättre fit en tidigare bästa*/
               best = p;
               prevbest = prevp;
           }
 
         } 
 
-        if(p == freep) { /* Looped through the free list space */
-          if(NULL == best) { /* No best fit*/
-            if((NULL  == morecore(nunits))){ /* Call morecore to try allocate more memory */
+        if(p == freep) { /* Den fria listan har loopats igenom */
+          if(NULL == best) { /* Ingen best fit har hittats*/
+            if((NULL  == morecore(nunits))){ /* Försöker hämta mer minne */
                 return NULL;
               }
           }
 
-          else {/*We had best match!!!*/
-            best->s.size -= nunits;/*Remove space from block*/
-            best += best->s.size;/*Make the best fit a header */
-            best->s.size = nunits; /* Set the size of this block to the requested amount*/
+          else {/* En "bästa" machning*/
+            best->s.size -= nunits;/*Tar bort minne från den blcoket*/
+            best += best->s.size;/*Gör den nya "best" fit till header */
+            best->s.size = nunits; /* Sätt blockets storlek till nunits */
             break;
           }
         
@@ -239,27 +237,29 @@ void * malloc(size_t nbytes){
       if (best == freep)
             freep = prevp;
 
-     return (void *)(best+1);
+     return (void *)(best+1); //Returnera den "bästa" fitten
 
 
   }
 }
 
+/* Biblioteksfuntkionen realloc omallokerar storleken på ett block och kopierar informationen i det gamla blocket till det nya blocket. */
+
 void *realloc(void * ptr, size_t size){
 
-    Header *newp; /* the new pointer*/
-    size_t currSize;
+    Header *newp; /* Den nya pekaren*/
+    size_t currSize; /*Den gamla storleken*/
 
 
     if (ptr == NULL){
-      return malloc(size);
+      return malloc(size); // Om pekaren är null allokera ny minnesmängd
     }
-    else if (size == 0){
+    else if (size == 0){ // Om size är 0 frigör blocket och lägg till i den fria listan
       free(ptr);
       return NULL;
     }
 
-    newp = ((Header *)ptr) - 1;
+    newp = ((Header *)ptr) - 1; 
     currSize = (newp->s.size-1) * sizeof(Header);
 
 
@@ -267,12 +267,12 @@ void *realloc(void * ptr, size_t size){
       currSize = size;
     }
 
-    newp = malloc(size); /*ALlocate new space*/
+    newp = malloc(size); /*Allokera ny minnesstorlek*/
     if(newp == NULL)
       return NULL;
 
-    memcpy(newp, ptr, currSize); /* Copy the old pointer to new pointer */
-    free(ptr); /* Free the old pointer*/
+    memcpy(newp, ptr, currSize); /* Kopiera innehållet i den gamla pekaren till nya  med den nya minnesstorleken */
+    free(ptr); /* Firgör den gamla pekaren*/
 
     return newp;
 

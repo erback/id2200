@@ -4,8 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
-#include "timer.h"
+#include <sys/time.h>
 #include "malloc.h"
 
 #define NUM_ALLOCS 1000
@@ -31,12 +30,17 @@ int main(int argc, char *argv[]) {
 
             malloc(42); /* Get things into cache */
 
+            struct timeval start, end; double elapsed;
+
+
             /* Measure allocations */
             for (j = 0; j < NUM_ALLOCS; ++j) {
-                TIMER_START();
+                gettimeofday(&start, NULL);
                 blocks[j] = malloc(block_sizes[i]);
-                TIMER_STOP();
-                avg_time += TIMER_ELAPSED_US();
+                gettimeofday(&end, NULL);
+                elapsed = (end.tv_sec - start.tv_sec) * 1000000;
+                elapsed = (elapsed + (end.tv_usec - start.tv_usec));
+                avg_time += elapsed;
             }
             avg_time /= NUM_ALLOCS;
             printf("%lu,%.2f\n", block_sizes[i], avg_time);
