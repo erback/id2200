@@ -84,7 +84,7 @@ void free(void * ap)
     p->s.ptr = bp->s.ptr;
   } else
     p->s.ptr = bp;
-  freep = p;  //den nya fria länkade listan
+  freep = p;  /*den nya fria länkade listan*/
 }
 
 /* morecore: ask system for more memory */
@@ -121,7 +121,7 @@ static Header *morecore(unsigned nu)
     nu = NALLOC;
 #ifdef MMAP
   noPages = ((nu*sizeof(Header))-1)/getpagesize() + 1;
-  cp = mmap(__endHeap, noPages*getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+  cp = mmap(__endHeap, noPages*getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   nu = (noPages*getpagesize())/sizeof(Header);
   __endHeap += noPages*getpagesize();
 #else
@@ -134,7 +134,7 @@ static Header *morecore(unsigned nu)
   up = (Header *) cp;
   up->s.size = nu;
   free((void *)(up+1));
-  return freep; //Returnerar den fria listan med mer minne som efterfrågats
+  return freep; /*Returnerar den fria listan med mer minne som efterfrågats*/
 }
 
 
@@ -188,7 +188,7 @@ void * malloc(size_t nbytes){
       }
       if(p == freep){                                    /* Inget block som är stort nog har hittats därför anropas morecore för att fixa mer minne*/
         if((p = morecore(nunits)) == NULL)
-	       return NULL;                                    //Slut på minne
+	       return NULL;                                    /*Slut på minne*/
          }                                    
     } 
   } 
@@ -198,6 +198,7 @@ void * malloc(size_t nbytes){
     Header *best = NULL, *prevbest;
      for(p= prevp->s.ptr;  ; prevp = p, p = p->s.ptr) {
         if (p->s.size == nunits) { /* En perfekt matchning*/
+          prevbest = NULL;
           prevp-> s.ptr = p->s.ptr;
           freep = prevp;
           return (void *) (p +1);
@@ -233,11 +234,11 @@ void * malloc(size_t nbytes){
         }
 
      }
-
+ 
       if (best == freep)
             freep = prevp;
 
-     return (void *)(best+1); //Returnera den "bästa" fitten
+     return (void *)(best+1); /*Returnera den "bästa" fitten*/
 
 
   }
@@ -252,9 +253,9 @@ void *realloc(void * ptr, size_t size){
 
 
     if (ptr == NULL){
-      return malloc(size); // Om pekaren är null allokera ny minnesmängd
+      return malloc(size); /* Om pekaren är null allokera ny minnesmängd*/
     }
-    else if (size == 0){ // Om size är 0 frigör blocket och lägg till i den fria listan
+    else if (size == 0){ /* Om size är 0 frigör blocket och lägg till i den fria listan*/
       free(ptr);
       return NULL;
     }
