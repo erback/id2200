@@ -3,14 +3,13 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/mman.h>
-#include <stdio.h>
+#include <stdio.h> 
+  
+#ifndef STRATEGY
+#define STRATEGY 1 /* Use strategy first as default */
+#endif
 
-
-#define STRATEGY 2 /* Use strategy first as default */
-
-
-
-#define STRATEGY_FIRST 1
+#define STRATEGY_FIRST 1 
 #define STRATEGY_BEST 2
 
 #if STRATEGY < 1 || STRATEGY > 2
@@ -40,7 +39,7 @@ union header {                                          /* block header */
 };
 
 typedef union header Header;
-
+ 
 static Header base;                                     /* empty list to get started */
 static Header *freep = NULL;                            /* start of free list */
 
@@ -104,7 +103,7 @@ static Header *morecore(unsigned nu)
 #else
   cp = sbrk(nu*sizeof(Header));
 #endif
-  if(cp == (void *) -1){                                 /* no space at all */
+  if(cp == (void *) -1){                                  /* no space at all */
     perror("failed to get more memory");
     return NULL;
   }
@@ -119,7 +118,6 @@ void * malloc(size_t nbytes){
   Header *p, *prevp;
   Header * morecore(unsigned);
   unsigned nunits;
-
   if(nbytes == 0) return NULL;
 
   nunits = (nbytes+sizeof(Header)-1)/sizeof(Header) +1; /*Calculate units of memory to allocate*/
@@ -173,7 +171,7 @@ void * malloc(size_t nbytes){
               prevbest = prevp;
           }
 
-        }
+        } 
 
         if(p == freep) { /* Looped through the free list space */
           if(NULL == best) { /* No best fit*/
